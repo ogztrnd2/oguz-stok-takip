@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Building2, ShoppingCart, Package, Banknote, Plus, Trash2, X, RefreshCcw, Printer, ArrowDownToLine, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowLeft, Building2, ShoppingCart, Package, Banknote, Plus, Trash2, X, RefreshCcw, Printer, ArrowDownToLine, ArrowUpRight, ArrowDownLeft, Home } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FirmaDetayPage() {
@@ -168,11 +168,14 @@ export default function FirmaDetayPage() {
       
       {/* ÜST HEADER */}
       <header className="print:hidden sticky top-0 z-50 bg-white/85 backdrop-blur-md px-6 py-4 border-b border-slate-200/60 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/firmalar" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
+        <div className="flex items-center gap-3">
+          <Link href="/firmalar" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors" title="Listeye Dön">
             <ArrowLeft size={20} />
           </Link>
-          <div>
+          <Link href="/" className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 hover:bg-indigo-100 transition-colors" title="Ana Sayfaya Dön">
+            <Home size={20} />
+          </Link>
+          <div className="ml-1">
             <h1 className="text-xl font-black text-slate-900">Ardiye / Firma Profili</h1>
           </div>
         </div>

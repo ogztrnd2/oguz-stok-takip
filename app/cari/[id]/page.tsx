@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, User, FileText, ShoppingCart, Package, Banknote, Plus, Trash2, X, RefreshCcw, Printer } from 'lucide-react';
+import { ArrowLeft, User, FileText, ShoppingCart, Package, Banknote, Plus, Trash2, X, RefreshCcw, Printer, Home } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CariDetayPage() {
@@ -143,11 +143,14 @@ export default function CariDetayPage() {
       
       {/* Yazdırma/PDF esnasında gizlenecek üst header */}
       <header className="print:hidden sticky top-0 z-50 bg-white/85 backdrop-blur-md px-6 py-4 border-b border-slate-200/60 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/alacaklar" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
+        <div className="flex items-center gap-3">
+          <Link href="/alacaklar" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors" title="Listeye Dön">
             <ArrowLeft size={20} />
           </Link>
-          <div>
+          <Link href="/" className="w-10 h-10 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 hover:bg-emerald-100 transition-colors" title="Ana Sayfaya Dön">
+            <Home size={20} />
+          </Link>
+          <div className="ml-1">
             <h1 className="text-xl font-black text-slate-900">Müşteri Profili</h1>
           </div>
         </div>

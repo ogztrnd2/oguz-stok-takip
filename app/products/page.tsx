@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Package, ArrowLeft, Edit, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -50,7 +52,11 @@ export default function ProductsPage() {
             {products.map((product) => {
               const isKritik = product.stock_quantity <= product.critical_stock;
               return (
-                <div key={product.id} className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center group hover:shadow-md transition-all">
+                <div 
+                  key={product.id} 
+                  onClick={() => router.push(`/urun/${product.id}`)}
+                  className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center group hover:shadow-md hover:border-blue-200 transition-all cursor-pointer active:scale-[0.99]"
+                >
                   
                   {/* Sol Taraf - Ürün Bilgileri */}
                   <div className="flex-1 pr-3">
@@ -62,7 +68,7 @@ export default function ProductsPage() {
                   </div>
                   
                   {/* Sağ Taraf - Stok ve Düzenle Butonu (Yanyana) */}
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3" onClick={(e) => e.stopPropagation()}>
                     
                     {/* Stok Rozeti */}
                     <div className={`min-w-[50px] sm:min-w-[60px] px-2 py-2 sm:px-3 rounded-xl text-center flex flex-col items-center justify-center border ${
@@ -74,7 +80,7 @@ export default function ProductsPage() {
                       <span className="text-[9px] uppercase font-bold tracking-wider mt-1 opacity-80">{product.unit}</span>
                     </div>
                     
-                    {/* Düzenle Butonu - Absolute kaldırıldı, yanyana hizalandı */}
+                    {/* Düzenle Butonu - Tıklandığında detay sayfasına gitmeyi engeller (stopPropagation) */}
                     <Link href={`/urun-duzenle/${product.id}`} className="w-9 h-9 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 transition-all shrink-0">
                       <Edit size={16} />
                     </Link>

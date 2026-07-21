@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Users, Phone, X, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Users, Phone, X, CheckCircle2, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -66,10 +66,13 @@ export default function AlacaklarPage() {
       {/* ÜST HEADER */}
       <header className="w-full max-w-md bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-200/60 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <Link href="/" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
+          <Link href="/" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors" title="Listeye Dön">
             <ArrowLeft size={20} />
           </Link>
-          <div>
+          <Link href="/" className="w-10 h-10 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 hover:bg-emerald-100 transition-colors" title="Ana Sayfaya Dön">
+            <Home size={20} />
+          </Link>
+          <div className="ml-1">
             <h1 className="text-lg font-black tracking-tight text-slate-900 leading-none">Alacaklı Defteri</h1>
             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Müşteri Borç Takibi</p>
           </div>

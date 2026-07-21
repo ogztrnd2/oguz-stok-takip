@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Printer, Package, Building2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, CheckCircle2, Printer, Package, Building2, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SatisYapPage() {
@@ -14,6 +14,9 @@ export default function SatisYapPage() {
   const [secilenKisi, setSecilenKisi] = useState('');
   const [sepet, setSepet] = useState<any[]>([]);
   
+  // Varsayılan olarak bugünün tarihini "YYYY-MM-DD" formatında alıyoruz
+  const [secilenTarih, setSecilenTarih] = useState(new Date().toISOString().split('T')[0]);
+  
   // Seçilen ürün form state'leri
   const [urunId, setUrunId] = useState('');
   const [adet, setAdet] = useState('');
@@ -21,8 +24,10 @@ export default function SatisYapPage() {
   
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const [satisTamamlandi, setSatisTamamlandi] = useState(false);
+  
   const [tamamlananKisiAdi, setTamamlananKisiAdi] = useState('');
-  const [islemTarihi, setIslemTarihi] = useState('');
+  const [tamamlananKisiTipi, setTamamlananKisiTipi] = useState(''); // Geri dönüş linki için gerekli
+  const [pdfTarihiGosterim, setPdfTarihiGosterim] = useState('');
 
   useEffect(() => {
     veriGetir();
@@ -33,7 +38,18 @@ export default function SatisYapPage() {
     if (uData) setUrunler(uData);
 
     const { data: kData } = await supabase.from('contacts').select('*').order('name');
-    if (kData) setKisiler(kData);
+    if (kData) {
+      setKisiler(kData);
+      
+      // Eğer Müşteri/Firma detayından "Mal Ver" diyerek gelindiyse URL'den ID'yi alıp otomatik seç
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const gelenId = urlParams.get('firma') || urlParams.get('cari') || urlParams.get('id');
+        if (gelenId && kData.some(k => k.id === gelenId)) {
+          setSecilenKisi(gelenId);
+        }
+      }
+    }
   };
 
   const urunSecilince = (id: string) => {
@@ -86,15 +102,28 @@ export default function SatisYapPage() {
     try {
       const kisiObj = kisiler.find(k => k.id === secilenKisi);
       const kAdi = kisiObj ? kisiObj.name : 'Alıcı';
+      
       setTamamlananKisiAdi(kAdi);
-      setIslemTarihi(new Date().toLocaleDateString('tr-TR'));
+      setTamamlananKisiTipi(kisiObj ? kisiObj.type : 'firma');
+      
+      // PDF için tarihi Türk usulü formatlıyoruz (DD.MM.YYYY)
+      const secilenTarihObj = new Date(secilenTarih);
+      setPdfTarihiGosterim(secilenTarihObj.toLocaleDateString('tr-TR'));
 
-      // 1. Orders tablosuna ana kaydı at
+      // Veritabanı saat dilimi sorunları olmaması için saati ayarlıyoruz.
+      const bugunStr = new Date().toISOString().split('T')[0];
+      let veritabaniTarihi = new Date().toISOString();
+      if (secilenTarih !== bugunStr) {
+        veritabaniTarihi = new Date(`${secilenTarih}T12:00:00`).toISOString();
+      }
+
+      // 1. Orders tablosuna ana kaydı at (seçilen tarih ile)
       const { data: orderData, error: orderErr } = await supabase.from('orders').insert({
         contact_id: secilenKisi,
         customer_name: kAdi,
         total_amount: toplamTutar,
-        type: 'satis'
+        type: 'satis',
+        created_at: veritabaniTarihi
       }).select().single();
 
       if (orderErr) throw orderErr;
@@ -135,6 +164,9 @@ export default function SatisYapPage() {
     window.print();
   };
 
+  // Müşterinin profiline (Cari veya Firma) döneceği dinamik link
+  const donusLinki = tamamlananKisiTipi === 'musteri' ? `/cari/${secilenKisi}` : `/firma/${secilenKisi}`;
+
   return (
     <div className="min-h-screen bg-slate-100 pb-28 font-sans selection:bg-blue-100 flex flex-col items-center">
       
@@ -155,26 +187,42 @@ export default function SatisYapPage() {
         
         {!satisTamamlandi ? (
           <>
-            {/* KİŞİ / FİRMA SEÇİMİ */}
-            <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 space-y-3">
-              <label className="block text-xs font-black uppercase tracking-wider text-slate-400">1. Müşteri veya Ardiye / Firma Seçin</label>
-              <select 
-                value={secilenKisi} 
-                onChange={(e) => setSecilenKisi(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:border-blue-500 text-sm"
-              >
-                <option value="">-- Müşteri veya Ardiye Seçiniz --</option>
-                {kisiler.map(k => (
-                  <option key={k.id} value={k.id}>
-                    {k.name} ({k.type === 'musteri' ? 'Müşteri' : k.type === 'firma' ? 'Ardiye/Firma' : 'Tedarikçi'})
-                  </option>
-                ))}
-              </select>
+            {/* TARİH VE KİŞİ / FİRMA SEÇİMİ */}
+            <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 space-y-4">
+              
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                  <Calendar size={14} /> 1. İşlem Tarihi
+                </label>
+                <input 
+                  type="date" 
+                  value={secilenTarih} 
+                  onChange={(e) => setSecilenTarih(e.target.value)} 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:border-blue-500 text-sm appearance-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">2. Müşteri veya Ardiye / Firma</label>
+                <select 
+                  value={secilenKisi} 
+                  onChange={(e) => setSecilenKisi(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-slate-800 outline-none focus:border-blue-500 text-sm"
+                >
+                  <option value="">-- Seçiniz --</option>
+                  {kisiler.map(k => (
+                    <option key={k.id} value={k.id}>
+                      {k.name} ({k.type === 'musteri' ? 'Müşteri' : k.type === 'firma' ? 'Ardiye/Firma' : 'Tedarikçi'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
             </div>
 
             {/* MALZEME EKLEME FORMU */}
             <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 space-y-4">
-              <label className="block text-xs font-black uppercase tracking-wider text-slate-400">2. Malzeme ve Ölçü Ekle</label>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-400">3. Malzeme ve Ölçü Ekle</label>
               
               <form onSubmit={sepeteEkle} className="space-y-3">
                 <select 
@@ -254,7 +302,7 @@ export default function SatisYapPage() {
           </>
         ) : (
           /* BAŞARILI VE PDF EKRANI */
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="print:hidden bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80 text-center space-y-4">
               <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
                 <CheckCircle2 size={32} />
@@ -271,8 +319,8 @@ export default function SatisYapPage() {
                 <Printer size={20} /> PDF Çıkart / Fişi Yazdır
               </button>
 
-              <Link href="/" className="block w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-2xl text-sm transition-all">
-                Ana Sayfaya Dön
+              <Link href={donusLinki} className="block w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-2xl text-sm transition-all text-center">
+                {tamamlananKisiAdi} Sayfasına Dön
               </Link>
             </div>
 
@@ -284,7 +332,7 @@ export default function SatisYapPage() {
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5">Şantiye & Malzeme Sevk Fişi</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-500">Tarih: <span className="text-slate-900">{islemTarihi}</span></p>
+                  <p className="text-xs font-bold text-slate-500">Tarih: <span className="text-slate-900">{pdfTarihiGosterim}</span></p>
                   <p className="text-xs font-bold text-slate-500 mt-1">Belge Türü: <span className="text-slate-900">Malzeme Çıkış Fişi</span></p>
                 </div>
               </div>

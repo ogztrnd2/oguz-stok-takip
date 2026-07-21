@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Package, Trash2, RefreshCcw, TrendingUp, Calendar, Edit3, X, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Package, Trash2, RefreshCcw, TrendingUp, Calendar, Edit3, X, CheckCircle2, Building2, Home } from 'lucide-react';
 import Link from 'next/link';
 
 export default function UrunDetayPage() {
@@ -14,10 +14,8 @@ export default function UrunDetayPage() {
   const [sonAlisFiyati, setSonAlisFiyati] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
-  // Sadece pencereler için kullanılan Zihni / Tevfik sekmesi
   const [aktifSekme, setAktifSekme] = useState<'zihni' | 'tevfik'>('zihni');
 
-  // Stok Düzenleme Modal State
   const [duzenleModalAcik, setDuzenleModalAcik] = useState(false);
   const [yeniStok, setYeniStok] = useState('');
   const [guncelleniyor, setGuncelleniyor] = useState(false);
@@ -47,7 +45,6 @@ export default function UrunDetayPage() {
         .order('id', { ascending: false });
 
       if (itemData) {
-        // TypeScript tip güvenliği ve dizi/obje ihtimaline karşı orders verisini güvenli işliyoruz
         const formatli = itemData
           .filter(item => {
             const siparis = Array.isArray(item.orders) ? item.orders[0] : item.orders;
@@ -156,10 +153,8 @@ export default function UrunDetayPage() {
     }
   };
 
-  // Malzemenin pencere olup olmadığını kontrol ediyoruz (İsminin içinde "pencere" geçiyorsa)
   const pencereMi = urun?.name?.toLowerCase().includes('pencere');
 
-  // Sadece pencere ise Zihni ve Tevfik olarak ayırıyoruz
   const zihniHareketler = hareketler.filter(h => h.karsiTaraf.toLowerCase().includes('zihni'));
   const tevfikHareketler = hareketler.filter(h => h.karsiTaraf.toLowerCase().includes('tevfik'));
 
@@ -168,7 +163,7 @@ export default function UrunDetayPage() {
 
   const gosterilecekHareketler = pencereMi 
     ? (aktifSekme === 'zihni' ? zihniHareketler : tevfikHareketler)
-    : hareketler; // Normal malzemeyse tüm alışları göster
+    : hareketler;
 
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-medium text-slate-500">Yükleniyor...</div>;
   if (!urun) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-medium text-slate-500">Malzeme bulunamadı.</div>;
@@ -177,127 +172,132 @@ export default function UrunDetayPage() {
     <div className="min-h-screen bg-slate-50 pb-24 font-sans selection:bg-blue-100">
       
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg px-6 py-5 border-b border-slate-200/60 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/products" className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors">
+        <div className="flex items-center gap-3">
+          <Link href="/products" className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors" title="Listeye Dön">
             <ArrowLeft size={20} />
           </Link>
-          <div>
+          <Link href="/" className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-100 transition-colors" title="Ana Sayfaya Dön">
+            <Home size={20} />
+          </Link>
+          <div className="ml-2">
             <h1 className="text-xl font-black text-slate-900">{pencereMi ? 'Pencere Detayı' : 'Malzeme Detayı'}</h1>
           </div>
         </div>
       </header>
 
-      <main className="p-6 space-y-6">
+      <main className="p-4 sm:p-6 space-y-6 max-w-xl mx-auto">
         
-        {/* ÜST BİLGİ KARTI */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+        {/* 1. ÜRÜN ÖZET KARTI (Kompakt Tasarım) */}
+        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex justify-between items-center relative">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+              <Package size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900 leading-tight pr-2">{urun.name}</h2>
+              <p className="text-sm font-black text-emerald-600 mt-0.5">
+                {urun.stock_quantity} <span className="text-xs font-medium text-slate-500">{urun.unit} Depoda</span>
+              </p>
+            </div>
+          </div>
           
-          <div className="absolute top-4 right-4 flex gap-2">
-            <button onClick={urunGecmisiniSifirla} className="px-3 py-2 text-xs font-bold flex items-center gap-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 transition-all" title="Geçmişi Sıfırla">
-              <RefreshCcw size={14} /> Sıfırla
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setDuzenleModalAcik(true)} className="w-10 h-10 bg-slate-50 border border-slate-100 text-slate-600 rounded-xl flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all" title="Stoğu Manuel Düzenle">
+              <Edit3 size={18} />
             </button>
-            <button onClick={urunuKompleSil} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="Sil">
+            <button onClick={urunuKompleSil} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all" title="Ürünü Sil">
               <Trash2 size={18} />
             </button>
           </div>
-
-          <div className="flex items-center gap-4 mb-6 pr-32">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
-              <Package size={32} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-slate-900 leading-tight">{urun.name}</h2>
-              <p className="text-sm font-medium text-slate-500 mt-1">{pencereMi ? 'Ölçü / Pencere Çeşidi' : `Birim: ${urun.unit}`}</p>
-            </div>
-          </div>
-
-          {/* EĞER PENCERE İSE ZİHNİ VE TEVFİK SEKMELERİ GÖSTER */}
-          {pencereMi ? (
-            <div className="mb-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tedarikçi Son Alış Fiyatları</p>
-              <div className="grid grid-cols-2 gap-3 bg-slate-100 p-1.5 rounded-2xl">
-                <button 
-                  onClick={() => setAktifSekme('zihni')}
-                  className={`py-3.5 px-3 rounded-xl flex flex-col items-center justify-center transition-all ${aktifSekme === 'zihni' ? 'bg-white text-blue-600 shadow-sm ring-2 ring-blue-500/20' : 'text-slate-500 hover:text-slate-800'}`}
-                >
-                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">Zihni Alış</span>
-                  <span className="text-lg font-black mt-0.5">₺{zihniSonFiyat > 0 ? zihniSonFiyat.toLocaleString('tr-TR') : '0'}</span>
-                </button>
-                
-                <button 
-                  onClick={() => setAktifSekme('tevfik')}
-                  className={`py-3.5 px-3 rounded-xl flex flex-col items-center justify-center transition-all ${aktifSekme === 'tevfik' ? 'bg-white text-purple-600 shadow-sm ring-2 ring-purple-500/20' : 'text-slate-500 hover:text-slate-800'}`}
-                >
-                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">Tevfik Alış</span>
-                  <span className="text-lg font-black mt-0.5">₺{tevfikSonFiyat > 0 ? tevfikSonFiyat.toLocaleString('tr-TR') : '0'}</span>
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {/* GÜNCEL STOK VE SON ALIŞ FİYATI KARTLARI */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-              <p className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-400">Depo Güncel Stok</p>
-              <span className="text-3xl font-black text-blue-600">
-                {urun.stock_quantity} <span className="text-sm">{urun.unit}</span>
-              </span>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-              <p className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-400">Son Alış Fiyatı</p>
-              <span className="text-3xl font-black text-emerald-600">
-                ₺{sonAlisFiyati > 0 ? sonAlisFiyati.toLocaleString('tr-TR') : '0'}
-              </span>
-            </div>
-          </div>
-
-          <button onClick={() => setDuzenleModalAcik(true)} className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-md active:scale-95">
-            <Edit3 size={18} /> Stoğu Manuel Düzenle
-          </button>
         </div>
 
-        {/* GEÇMİŞ LİSTESİ BAŞLIĞI */}
-        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider pl-2 flex items-center gap-2">
-          <TrendingUp size={16} className={pencereMi ? (aktifSekme === 'zihni' ? 'text-blue-500' : 'text-purple-500') : 'text-orange-500'}/> 
-          {pencereMi 
-            ? (aktifSekme === 'zihni' ? 'Zihni\'den Yapılan Tüm Alışlar' : 'Tevfik\'ten Yapılan Tüm Alışlar')
-            : 'Malzeme Giriş Geçmişi (Depoya Gelenler)'
-          }
-        </h3>
-
-        <div className="space-y-4">
-          {gosterilecekHareketler.map((h, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm relative">
-              <button onClick={() => hareketSil(h.itemId, h.miktar)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors" title="Sil">
-                <Trash2 size={16} />
+        {/* 2. EĞER PENCERE İSE SEKMELER */}
+        {pencereMi && (
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">Tedarikçi Son Alış Fiyatları</p>
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+              <button 
+                onClick={() => setAktifSekme('zihni')}
+                className={`py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all ${aktifSekme === 'zihni' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-blue-500/20' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Zihni</span>
+                <span className="text-base font-black mt-0.5">₺{zihniSonFiyat > 0 ? zihniSonFiyat.toLocaleString('tr-TR') : '0'}</span>
               </button>
-
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-3 pr-8">
-                <div className="flex items-center gap-2 text-slate-500">
-                  <Calendar size={16} />
-                  <span className="text-sm font-bold">{new Date(h.tarih).toLocaleDateString('tr-TR')}</span>
-                </div>
-                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{h.karsiTaraf}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-bold text-slate-800 text-sm">Alış Birim Fiyatı</p>
-                  <p className="text-xs font-medium text-slate-500 mt-0.5">₺{h.fiyat}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-lg font-black text-emerald-600">
-                    +{h.miktar} {urun.unit}
-                  </span>
-                </div>
-              </div>
+              <button 
+                onClick={() => setAktifSekme('tevfik')}
+                className={`py-3 px-2 rounded-xl flex flex-col items-center justify-center transition-all ${aktifSekme === 'tevfik' ? 'bg-white text-purple-600 shadow-sm ring-1 ring-purple-500/20' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Tevfik</span>
+                <span className="text-base font-black mt-0.5">₺{tevfikSonFiyat > 0 ? tevfikSonFiyat.toLocaleString('tr-TR') : '0'}</span>
+              </button>
             </div>
-          ))}
-          {gosterilecekHareketler.length === 0 && (
-            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center">
-              <p className="text-slate-500 font-medium text-sm">Henüz kayıtlı alış hareketi bulunmuyor.</p>
-            </div>
-          )}
+          </div>
+        )}
+
+        {/* 3. EN ÜSTTE İSTENEN GEÇMİŞ LİSTESİ */}
+        <div>
+          <div className="flex justify-between items-end mb-4 px-2">
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <TrendingUp size={18} className="text-emerald-500"/> 
+              Malzeme Giriş Geçmişi
+            </h3>
+            <button onClick={urunGecmisiniSifirla} className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 flex items-center gap-1.5 transition-colors" title="Geçmişi Sıfırla">
+              <RefreshCcw size={12} /> Temizle
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {gosterilecekHareketler.map((h, idx) => {
+              const miktar = Number(h.miktar) || 0;
+              const fiyat = Number(h.fiyat) || 0;
+              const toplamTutar = miktar * fiyat;
+
+              return (
+                <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group">
+                  
+                  {/* Silme Butonu */}
+                  <button onClick={() => hareketSil(h.itemId, h.miktar)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors" title="Bu işlemi sil">
+                    <Trash2 size={18} />
+                  </button>
+
+                  {/* Tedarikçi ve Tarih Bilgisi */}
+                  <div className="pr-10 mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Tedarikçi / Alınan Yer</p>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-sm font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 flex items-center gap-1.5">
+                        <Building2 size={14} /> {h.karsiTaraf}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <Calendar size={14} />
+                      <span className="text-xs font-bold">{new Date(h.tarih).toLocaleDateString('tr-TR')}</span>
+                    </div>
+                  </div>
+
+                  {/* Fiyat ve Toplam Hesaplama Kartı */}
+                  <div className="bg-slate-50 rounded-2xl p-4 flex justify-between items-center border border-slate-100">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Miktar x Birim Fiyat</p>
+                      <p className="text-sm font-bold text-slate-700">
+                        {miktar} {urun.unit} <span className="text-slate-400 font-medium mx-1">x</span> ₺{fiyat.toLocaleString('tr-TR')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Toplam Tutar</p>
+                      <p className="text-xl font-black text-emerald-600">₺{toplamTutar.toLocaleString('tr-TR')}</p>
+                    </div>
+                  </div>
+                  
+                </div>
+              );
+            })}
+            
+            {gosterilecekHareketler.length === 0 && (
+              <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm text-center">
+                <p className="text-slate-500 font-medium text-sm">Bu ürün için henüz alış kaydı bulunmuyor.</p>
+              </div>
+            )}
+          </div>
         </div>
 
       </main>
