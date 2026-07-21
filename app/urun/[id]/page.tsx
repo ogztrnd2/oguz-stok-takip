@@ -47,17 +47,24 @@ export default function UrunDetayPage() {
         .order('id', { ascending: false });
 
       if (itemData) {
+        // TypeScript tip güvenliği ve dizi/obje ihtimaline karşı orders verisini güvenli işliyoruz
         const formatli = itemData
-          .filter(item => item.orders?.type === 'alis')
-          .map(item => ({
-            itemId: item.id,
-            orderId: item.orders?.id,
-            tarih: item.orders?.created_at,
-            tip: item.orders?.type,
-            karsiTaraf: item.orders?.customer_name || 'Bilinmeyen',
-            miktar: item.quantity,
-            fiyat: item.price
-          }))
+          .filter(item => {
+            const siparis = Array.isArray(item.orders) ? item.orders[0] : item.orders;
+            return siparis?.type === 'alis';
+          })
+          .map(item => {
+            const siparis = Array.isArray(item.orders) ? item.orders[0] : item.orders;
+            return {
+              itemId: item.id,
+              orderId: siparis?.id,
+              tarih: siparis?.created_at,
+              tip: siparis?.type,
+              karsiTaraf: siparis?.customer_name || 'Bilinmeyen',
+              miktar: item.quantity,
+              fiyat: item.price
+            };
+          })
           .sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime());
 
         setHareketler(formatli);
@@ -204,9 +211,7 @@ export default function UrunDetayPage() {
             </div>
           </div>
 
-          {/* ==================================================== */}
           {/* EĞER PENCERE İSE ZİHNİ VE TEVFİK SEKMELERİ GÖSTER */}
-          {/* ==================================================== */}
           {pencereMi ? (
             <div className="mb-6">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tedarikçi Son Alış Fiyatları</p>
@@ -230,9 +235,7 @@ export default function UrunDetayPage() {
             </div>
           ) : null}
 
-          {/* ==================================================== */}
           {/* GÜNCEL STOK VE SON ALIŞ FİYATI KARTLARI */}
-          {/* ==================================================== */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
               <p className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-400">Depo Güncel Stok</p>
