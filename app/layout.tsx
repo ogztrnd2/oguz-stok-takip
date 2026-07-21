@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css' // CSS DOSYAMIZI BURADAN ÇAĞIRIYORUZ
 
 export const metadata: Metadata = {
-  title: 'Oğuz Stok - Şantiye Paneli',
+  title: 'Oğuzhan Ticaret',
   description: 'İnşaat stok ve cari yönetim paneli',
 }
 

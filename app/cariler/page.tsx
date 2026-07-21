@@ -1,99 +1,83 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Users, Phone, ArrowLeft, Home, Package, PlusCircle, Settings, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Plus, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 export default function CarilerPage() {
-  const [cariler, setCariler] = useState<any[]>([]);
+  const [musteriler, setMusteriler] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCariler = async () => {
-      const { data } = await supabase.from('contacts').select('*').order('name');
-      if (data) setCariler(data);
+    const fetchMusteriler = async () => {
+      const { data } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('type', 'musteri')
+        .order('name');
+      
+      if (data) setMusteriler(data);
       setLoading(false);
     };
-    fetchCariler();
+    fetchMusteriler();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      <header className="bg-white px-5 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-        <div className="flex items-center">
-          <Link href="/" className="text-gray-600 mr-4">
-            <ArrowLeft size={24} />
+    <div className="min-h-screen bg-slate-50 pb-24 font-sans selection:bg-amber-100">
+      
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg px-6 py-5 border-b border-slate-200/60 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors">
+            <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-lg font-bold text-gray-800">Cari Hesaplar</h1>
+          <div>
+            <h1 className="text-xl font-black text-slate-900">Müşteriler</h1>
+            <p className="text-[11px] font-medium text-slate-500">Cari Rehberi</p>
+          </div>
         </div>
-        <Link href="/cari-ekle" className="bg-blue-100 text-blue-600 p-2 rounded-full">
+        <Link href="/cari-ekle" className="w-10 h-10 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center hover:bg-amber-100 transition-colors shadow-sm">
           <Plus size={20} />
         </Link>
       </header>
 
-      <main className="p-5">
+      <main className="p-6">
         {loading ? (
-          <div className="text-center text-gray-500 py-10">Yükleniyor...</div>
-        ) : cariler.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            Henüz hiç cari eklemediniz.
+          <div className="text-center text-slate-500 py-10 font-medium">Yükleniyor...</div>
+        ) : musteriler.length === 0 ? (
+          <div className="text-center py-10 text-slate-500 bg-white rounded-3xl border border-slate-100 shadow-sm">
+            Henüz hiç müşteri eklemediniz.
           </div>
         ) : (
           <div className="space-y-3">
-            {cariler.map((cari) => (
-              <div key={cari.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-gray-800">{cari.name}</h3>
-                    <span className={`text-[10px] px-2 py-1 rounded-md font-medium ${cari.type === 'musteri' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                      {cari.type === 'musteri' ? 'Müşteri' : 'Tedarikçi'}
-                    </span>
+            {musteriler.map((m) => (
+              <Link key={m.id} href={`/cari/${m.id}`} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center group hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98] block">
+                
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                    <Users size={20} />
                   </div>
-                  <div className="text-right">
-                    <p className={`font-bold ${cari.balance < 0 ? 'text-red-600' : cari.balance > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                      ₺ {cari.balance.toLocaleString('tr-TR')}
-                    </p>
-                    <p className="text-[10px] text-gray-400">Bakiye</p>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-lg">{m.name}</h3>
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">{m.phone || 'Telefon yok'}</p>
                   </div>
                 </div>
-                {cari.phone && (
-                  <div className="flex items-center text-xs text-gray-500 mt-1 gap-1">
-                    <Phone size={12} /> {cari.phone}
+                
+                <div className="flex items-center gap-3">
+                  <div className="text-right flex flex-col items-end">
+                    <p className={`font-black ${m.balance > 0 ? 'text-red-500' : 'text-slate-800'}`}>
+                      ₺{(m.balance || 0).toLocaleString('tr-TR')}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Bakiye</p>
                   </div>
-                )}
-              </div>
+                  <ChevronRight size={20} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                </div>
+
+              </Link>
             ))}
           </div>
         )}
       </main>
-
-      {/* ALT MENÜ */}
-      <nav className="fixed bottom-0 w-full bg-white border-t border-gray-200 px-6 py-3 flex justify-between items-center z-50">
-        <Link href="/" className="flex flex-col items-center text-gray-400 hover:text-gray-800">
-          <Home size={24} />
-          <span className="text-[10px] mt-1 font-medium">Ana Sayfa</span>
-        </Link>
-        <Link href="/products" className="flex flex-col items-center text-gray-400 hover:text-gray-800">
-          <Package size={24} />
-          <span className="text-[10px] mt-1 font-medium">Ürünler</span>
-        </Link>
-        
-        <Link href="/alis-gir" className="flex flex-col items-center justify-center -mt-8">
-          <div className="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg border-4 border-gray-50">
-            <PlusCircle size={30} />
-          </div>
-        </Link>
-
-        <Link href="/cariler" className="flex flex-col items-center text-blue-600">
-          <Users size={24} />
-          <span className="text-[10px] mt-1 font-medium">Cariler</span>
-        </Link>
-        <button className="flex flex-col items-center text-gray-400 hover:text-gray-800">
-          <Settings size={24} />
-          <span className="text-[10px] mt-1 font-medium">Ayarlar</span>
-        </button>
-      </nav>
     </div>
   );
 }
