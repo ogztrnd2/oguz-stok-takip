@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Building2, ShoppingCart, Package, Banknote, Plus, Trash2, X, RefreshCcw, Printer, ArrowDownToLine, ArrowUpRight, ArrowDownLeft, Home } from 'lucide-react';
+import { ArrowLeft, Building2, ShoppingCart, Package, Banknote, Plus, Trash2, X, RefreshCcw, Printer, ArrowDownToLine, ArrowUpRight, ArrowDownLeft, Home, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FirmaDetayPage() {
@@ -188,7 +188,9 @@ export default function FirmaDetayPage() {
         </button>
       </header>
 
-      {/* YAZDIRILACAK / PDF EKSTRESİ (TARİHLER EKLENDİ) */}
+      {/* ========================================== */}
+      {/* YAZDIRILACAK DETAYLI B2B PDF EKSTRESİ */}
+      {/* ========================================== */}
       <div className="hidden print:block bg-white p-6 font-sans text-slate-900 space-y-4 text-xs">
         <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
           <div>
@@ -217,22 +219,47 @@ export default function FirmaDetayPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
+          
+          {/* PDF: ALDIKLARIMIZ SÜTUNU */}
           <div>
             <h3 className="font-black uppercase text-[10px] text-purple-700 bg-purple-50 p-2 rounded mb-2 tracking-wider">📥 Aldıklarımız (Mal ve Ödemeler)</h3>
             <table className="w-full text-left border-collapse">
               <tbody className="divide-y divide-slate-100 text-[10px] font-medium">
-                {aldiklarimiz.map((islem) => (
-                  <tr key={islem.id}>
-                    <td className="py-2">
-                      <span className="block font-bold text-slate-400 text-[9px]">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
-                      <span className="font-bold text-slate-800">{islem.type === 'alis' ? 'Mal Alışı' : islem.customer_name}</span>
-                      {islem.order_items?.map((k: any, i: number) => (
-                        <span key={i} className="block text-[9px] text-slate-500">• {k.products?.name} ({k.quantity} {k.products?.unit})</span>
-                      ))}
-                    </td>
-                    <td className="py-2 text-right font-black text-purple-700 align-top">₺{islem.total_amount?.toLocaleString('tr-TR')}</td>
-                  </tr>
-                ))}
+                {aldiklarimiz.map((islem) => {
+                  const hamAd = islem.customer_name || '';
+                  const parcalar = hamAd.split('|');
+                  const isimKismi = parcalar[0];
+                  const notKismi = parcalar.length > 1 ? parcalar.slice(1).join('|') : null;
+
+                  return (
+                    <tr key={islem.id}>
+                      <td className="py-3 align-top pr-2">
+                        <span className="block font-bold text-slate-400 text-[9px] mb-1.5">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
+                        
+                        {islem.order_items && islem.order_items.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {islem.order_items.map((k: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-end border-b border-slate-100 last:border-0 pb-1 mb-1 last:mb-0 last:pb-0">
+                                <span className="font-bold text-slate-800 text-[9px]">{k.products?.name}</span>
+                                <div className="text-right whitespace-nowrap ml-2">
+                                  <span className="text-[8px] text-slate-500 mr-2">{k.quantity} {k.products?.unit} x ₺{k.price}</span>
+                                  <span className="font-bold text-[9px] text-slate-800">₺{(k.quantity * k.price).toLocaleString('tr-TR')}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="font-bold text-slate-800 text-[10px] block mt-0.5">{isimKismi}</span>
+                        )}
+
+                        {notKismi && <span className="block text-[8px] italic text-slate-500 mt-1.5">Not: {notKismi}</span>}
+                      </td>
+                      <td className="py-3 text-right font-black text-purple-700 align-top whitespace-nowrap pl-2">
+                        ₺{islem.total_amount?.toLocaleString('tr-TR')}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div className="mt-3 pt-2 border-t border-purple-200 flex justify-between items-center font-black text-purple-800 text-xs">
@@ -241,22 +268,46 @@ export default function FirmaDetayPage() {
             </div>
           </div>
 
+          {/* PDF: BİZDEN ÇIKANLAR SÜTUNU */}
           <div>
             <h3 className="font-black uppercase text-[10px] text-blue-700 bg-blue-50 p-2 rounded mb-2 tracking-wider">📤 Bizden Çıkanlar (Mal ve Ödemeler)</h3>
             <table className="w-full text-left border-collapse">
               <tbody className="divide-y divide-slate-100 text-[10px] font-medium">
-                {bizdenCikanlar.map((islem) => (
-                  <tr key={islem.id}>
-                    <td className="py-2">
-                      <span className="block font-bold text-slate-400 text-[9px]">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
-                      <span className="font-bold text-slate-800">{islem.type === 'satis' ? 'Mal Verildi' : islem.customer_name}</span>
-                      {islem.order_items?.map((k: any, i: number) => (
-                        <span key={i} className="block text-[9px] text-slate-500">• {k.products?.name} ({k.quantity} {k.products?.unit})</span>
-                      ))}
-                    </td>
-                    <td className="py-2 text-right font-black text-blue-700 align-top">₺{islem.total_amount?.toLocaleString('tr-TR')}</td>
-                  </tr>
-                ))}
+                {bizdenCikanlar.map((islem) => {
+                  const hamAd = islem.customer_name || '';
+                  const parcalar = hamAd.split('|');
+                  const isimKismi = parcalar[0];
+                  const notKismi = parcalar.length > 1 ? parcalar.slice(1).join('|') : null;
+
+                  return (
+                    <tr key={islem.id}>
+                      <td className="py-3 align-top pr-2">
+                        <span className="block font-bold text-slate-400 text-[9px] mb-1.5">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
+                        
+                        {islem.order_items && islem.order_items.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {islem.order_items.map((k: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-end border-b border-slate-100 last:border-0 pb-1 mb-1 last:mb-0 last:pb-0">
+                                <span className="font-bold text-slate-800 text-[9px]">{k.products?.name}</span>
+                                <div className="text-right whitespace-nowrap ml-2">
+                                  <span className="text-[8px] text-slate-500 mr-2">{k.quantity} {k.products?.unit} x ₺{k.price}</span>
+                                  <span className="font-bold text-[9px] text-slate-800">₺{(k.quantity * k.price).toLocaleString('tr-TR')}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="font-bold text-slate-800 text-[10px] block mt-0.5">{isimKismi}</span>
+                        )}
+
+                        {notKismi && <span className="block text-[8px] italic text-slate-500 mt-1.5">Not: {notKismi}</span>}
+                      </td>
+                      <td className="py-3 text-right font-black text-blue-700 align-top whitespace-nowrap pl-2">
+                        ₺{islem.total_amount?.toLocaleString('tr-TR')}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div className="mt-3 pt-2 border-t border-blue-200 flex justify-between items-center font-black text-blue-800 text-xs">
@@ -264,6 +315,7 @@ export default function FirmaDetayPage() {
               <span>₺{toplambizdenCikanlar.toLocaleString('tr-TR')}</span>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -331,37 +383,63 @@ export default function FirmaDetayPage() {
           </button>
         </div>
 
-        {/* İKİ SÜTUNLU LİSTE GÖRÜNÜMÜ */}
+        {/* İKİ SÜTUNLU DETAYLI LİSTE GÖRÜNÜMÜ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          {/* ALDIKLARIMIZ */}
+          {/* ALDIKLARIMIZ SÜTUNU EKRANI */}
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
             <div className="space-y-3">
               <h3 className="text-xs font-black text-purple-700 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                <ArrowDownLeft size={16} /> Aldıklarımız (Mal ve Ödemeler)
+                <ArrowDownLeft size={16} /> Aldıklarımız
               </h3>
               <div className="space-y-2.5">
-                {aldiklarimiz.map((islem) => (
-                  <div key={islem.id} className="bg-purple-50/50 p-3 rounded-2xl border border-purple-100 relative group">
-                    <button onClick={() => fisSil(islem.id, islem.type, islem.total_amount)} className="absolute top-3 right-3 text-slate-300 hover:text-red-500 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                    <div className="flex justify-between items-center pr-6 mb-1">
-                      <span className="text-[10px] font-bold text-slate-400">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
-                      <span className="text-sm font-black text-purple-700">₺{islem.total_amount?.toLocaleString('tr-TR')}</span>
-                    </div>
-                    {islem.type === 'alis' ? (
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-slate-800">Mal Alışı</p>
-                        {islem.order_items?.map((k: any, idx: number) => (
-                          <p key={idx} className="text-[11px] text-slate-600">• {k.products?.name} ({k.quantity} {k.products?.unit} x ₺{k.price})</p>
-                        ))}
+                {aldiklarimiz.map((islem) => {
+                  const hamAd = islem.customer_name || '';
+                  const parcalar = hamAd.split('|');
+                  const isimKismi = parcalar[0];
+                  const notKismi = parcalar.length > 1 ? parcalar.slice(1).join('|') : null;
+
+                  return (
+                    <div key={islem.id} className="bg-purple-50/50 p-3.5 rounded-2xl border border-purple-100 relative group">
+                      <button onClick={() => fisSil(islem.id, islem.type, islem.total_amount)} className="absolute top-3.5 right-3.5 text-slate-300 hover:text-red-500 transition-colors z-10">
+                        <Trash2 size={14} />
+                      </button>
+                      
+                      <div className="flex justify-between items-center pr-6 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
+                        <span className="text-sm font-black text-purple-700">₺{islem.total_amount?.toLocaleString('tr-TR')}</span>
                       </div>
-                    ) : (
-                      <p className="text-xs font-bold text-slate-800">{islem.customer_name}</p>
-                    )}
-                  </div>
-                ))}
+
+                      {/* İŞLEM DETAYI - KALEMLER */}
+                      <div className="w-full">
+                        {islem.type === 'alis' && <p className="text-[10px] font-black text-purple-600 uppercase tracking-wider mb-1.5">Malzeme Girişi</p>}
+                        {islem.type !== 'alis' && <p className="text-xs font-bold text-slate-800">{isimKismi}</p>}
+
+                        {islem.order_items && islem.order_items.length > 0 && (
+                          <div className="space-y-1.5 mt-2 w-full">
+                            {islem.order_items.map((k: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center bg-white/80 p-2.5 rounded-xl border border-purple-100/50">
+                                <span className="font-bold text-slate-700 text-xs">{k.products?.name}</span>
+                                <div className="text-right">
+                                  <span className="block text-[10px] font-medium text-slate-400">{k.quantity} {k.products?.unit} x ₺{k.price}</span>
+                                  <span className="block text-[11px] font-black text-slate-600">₺{(k.quantity * k.price).toLocaleString('tr-TR')}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* NOT ALANI */}
+                        {notKismi && (
+                          <div className="mt-3 bg-amber-50 border border-amber-100 p-2.5 rounded-xl flex items-start gap-1.5">
+                            <FileText size={12} className="text-amber-500 mt-0.5 shrink-0" />
+                            <span className="text-[10px] font-bold text-amber-700 leading-snug">Not: {notKismi}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 {aldiklarimiz.length === 0 && (
                   <p className="text-center text-slate-400 text-xs py-4">Henüz kayıt yok.</p>
                 )}
@@ -374,34 +452,60 @@ export default function FirmaDetayPage() {
             </div>
           </div>
 
-          {/* BİZDEN ÇIKANLAR */}
+          {/* BİZDEN ÇIKANLAR SÜTUNU EKRANI */}
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
             <div className="space-y-3">
               <h3 className="text-xs font-black text-blue-700 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                <ArrowUpRight size={16} /> Bizden Çıkanlar (Mal ve Ödemeler)
+                <ArrowUpRight size={16} /> Bizden Çıkanlar
               </h3>
               <div className="space-y-2.5">
-                {bizdenCikanlar.map((islem) => (
-                  <div key={islem.id} className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100 relative group">
-                    <button onClick={() => fisSil(islem.id, islem.type, islem.total_amount)} className="absolute top-3 right-3 text-slate-300 hover:text-red-500 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                    <div className="flex justify-between items-center pr-6 mb-1">
-                      <span className="text-[10px] font-bold text-slate-400">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
-                      <span className="text-sm font-black text-blue-700">₺{islem.total_amount?.toLocaleString('tr-TR')}</span>
-                    </div>
-                    {islem.type === 'satis' ? (
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-slate-800">Mal Çıkışı / Verilen</p>
-                        {islem.order_items?.map((k: any, idx: number) => (
-                          <p key={idx} className="text-[11px] text-slate-600">• {k.products?.name} ({k.quantity} {k.products?.unit} x ₺{k.price})</p>
-                        ))}
+                {bizdenCikanlar.map((islem) => {
+                  const hamAd = islem.customer_name || '';
+                  const parcalar = hamAd.split('|');
+                  const isimKismi = parcalar[0];
+                  const notKismi = parcalar.length > 1 ? parcalar.slice(1).join('|') : null;
+
+                  return (
+                    <div key={islem.id} className="bg-blue-50/50 p-3.5 rounded-2xl border border-blue-100 relative group">
+                      <button onClick={() => fisSil(islem.id, islem.type, islem.total_amount)} className="absolute top-3.5 right-3.5 text-slate-300 hover:text-red-500 transition-colors z-10">
+                        <Trash2 size={14} />
+                      </button>
+                      
+                      <div className="flex justify-between items-center pr-6 mb-2">
+                        <span className="text-[10px] font-bold text-slate-400">{new Date(islem.created_at).toLocaleDateString('tr-TR')}</span>
+                        <span className="text-sm font-black text-blue-700">₺{islem.total_amount?.toLocaleString('tr-TR')}</span>
                       </div>
-                    ) : (
-                      <p className="text-xs font-bold text-slate-800">{islem.customer_name}</p>
-                    )}
-                  </div>
-                ))}
+
+                      {/* İŞLEM DETAYI - KALEMLER */}
+                      <div className="w-full">
+                        {islem.type === 'satis' && <p className="text-[10px] font-black text-blue-600 uppercase tracking-wider mb-1.5">Malzeme Çıkışı / İade</p>}
+                        {islem.type !== 'satis' && <p className="text-xs font-bold text-slate-800">{isimKismi}</p>}
+
+                        {islem.order_items && islem.order_items.length > 0 && (
+                          <div className="space-y-1.5 mt-2 w-full">
+                            {islem.order_items.map((k: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center bg-white/80 p-2.5 rounded-xl border border-blue-100/50">
+                                <span className="font-bold text-slate-700 text-xs">{k.products?.name}</span>
+                                <div className="text-right">
+                                  <span className="block text-[10px] font-medium text-slate-400">{k.quantity} {k.products?.unit} x ₺{k.price}</span>
+                                  <span className="block text-[11px] font-black text-slate-600">₺{(k.quantity * k.price).toLocaleString('tr-TR')}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* NOT ALANI */}
+                        {notKismi && (
+                          <div className="mt-3 bg-amber-50 border border-amber-100 p-2.5 rounded-xl flex items-start gap-1.5">
+                            <FileText size={12} className="text-amber-500 mt-0.5 shrink-0" />
+                            <span className="text-[10px] font-bold text-amber-700 leading-snug">Not: {notKismi}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 {bizdenCikanlar.length === 0 && (
                   <p className="text-center text-slate-400 text-xs py-4">Henüz kayıt yok.</p>
                 )}

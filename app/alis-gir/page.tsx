@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowDownToLine, Plus, Trash2, CheckCircle2, Calendar } from 'lucide-react';
+import { ArrowLeft, ArrowDownToLine, Plus, Trash2, CheckCircle2, Calendar, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
@@ -12,8 +12,8 @@ export default function AlisGir() {
   const [loading, setLoading] = useState(false);
   const [mesaj, setMesaj] = useState('');
   
-  // Varsayılan olarak bugünün tarihini "YYYY-MM-DD" formatında alıyoruz
   const [islemTarihi, setIslemTarihi] = useState(new Date().toISOString().split('T')[0]);
+  const [islemNotu, setIslemNotu] = useState(''); // YENİ EKLENEN NOT STATE'İ
   
   const [seciliTedarikciId, setSeciliTedarikciId] = useState('');
   const [seciliUrunId, setSeciliUrunId] = useState('');
@@ -69,29 +69,30 @@ export default function AlisGir() {
     try {
       const tedarikci = tedarikciler.find(t => t.id === seciliTedarikciId);
 
-      // Veritabanı saat dilimi sorunları olmaması için saati öğlen 12 olarak ayarlıyoruz.
       const bugunStr = new Date().toISOString().split('T')[0];
       let veritabaniTarihi = new Date().toISOString();
       if (islemTarihi !== bugunStr) {
         veritabaniTarihi = new Date(`${islemTarihi}T12:00:00`).toISOString();
       }
 
-      // 1. İşlemi ANA FİŞ (orders) tablosuna 'alis' olarak kaydet
+      // Veritabanını yormamak için NOT'u Firma adının sonuna | (boru) işaretiyle ekleyerek kaydediyoruz
+      const tAdi = tedarikci?.name || 'Firma/Tedarikçi';
+      const kaydedilecekAd = islemNotu.trim() !== '' ? `${tAdi}|${islemNotu}` : tAdi;
+
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([{ 
           contact_id: seciliTedarikciId,
-          customer_name: tedarikci?.name || 'Firma/Tedarikçi', 
+          customer_name: kaydedilecekAd, 
           total_amount: genelToplam,
           type: 'alis',
-          created_at: veritabaniTarihi // Seçilen tarihi gönderiyoruz
+          created_at: veritabaniTarihi 
         }])
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // 2. Fiş Kalemlerini (order_items) Ekle ve Stokları Artır
       for (const item of liste) {
         await supabase.from('order_items').insert([{
           order_id: orderData.id,
@@ -104,7 +105,6 @@ export default function AlisGir() {
         await supabase.from('products').update({ stock_quantity: yeniStok }).eq('id', item.id);
       }
 
-      // 3. Firmanın Bakiyesini DÜŞ (Borçlandığımız için)
       if (tedarikci) {
         const yeniBakiye = Number(tedarikci.balance || 0) - genelToplam;
         await supabase.from('contacts').update({ balance: yeniBakiye }).eq('id', tedarikci.id);
@@ -112,6 +112,7 @@ export default function AlisGir() {
 
       setMesaj('basarili');
       setListe([]);
+      setIslemNotu(''); // İşlem bitince notu temizle
       
       const { data: uData } = await supabase.from('products').select('*').order('name');
       if (uData) setUrunler(uData);
@@ -127,7 +128,6 @@ export default function AlisGir() {
   return (
     <div className="min-h-screen bg-slate-100 pb-28 font-sans selection:bg-orange-100 flex flex-col items-center">
       
-      {/* ÜST HEADER */}
       <header className="w-full max-w-md bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-200/60 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <Link href="/" className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
@@ -155,7 +155,6 @@ export default function AlisGir() {
           </div>
         )}
 
-        {/* TARİH VE KİŞİ / FİRMA SEÇİMİ */}
         <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 space-y-4">
           
           <div>
@@ -181,9 +180,22 @@ export default function AlisGir() {
             </select>
           </div>
 
+          {/* EKLENEN İŞLEM NOTU ALANI */}
+          <div>
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+              <FileText size={14} /> Ekstra Not / Açıklama (İsteğe Bağlı)
+            </label>
+            <input 
+              type="text" 
+              value={islemNotu} 
+              onChange={(e) => setIslemNotu(e.target.value)} 
+              placeholder="Örn: 8 TL yıkma parası verildi..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-medium text-slate-800 outline-none focus:border-orange-500 text-sm"
+            />
+          </div>
+
         </div>
 
-        {/* MALZEME EKLEME FORMU */}
         <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 space-y-4">
           <label className="block text-xs font-black uppercase tracking-wider text-slate-400">3. Gelen Malzeme ve Ölçü Ekle</label>
           
@@ -215,7 +227,6 @@ export default function AlisGir() {
           </form>
         </div>
 
-        {/* LİSTE */}
         {liste.length > 0 && (
           <div className="bg-gradient-to-br from-orange-500 to-red-500 p-1 rounded-3xl shadow-xl shadow-orange-500/10">
             <div className="bg-white p-5 rounded-[22px]">

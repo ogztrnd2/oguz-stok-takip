@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Package, Trash2, RefreshCcw, TrendingUp, Calendar, Edit3, X, CheckCircle2, Building2, Home } from 'lucide-react';
+import { ArrowLeft, Package, Trash2, RefreshCcw, TrendingUp, Calendar, Edit3, X, CheckCircle2, Building2, Home, FileText } from 'lucide-react';
 import Link from 'next/link';
 
 export default function UrunDetayPage() {
@@ -16,8 +16,18 @@ export default function UrunDetayPage() {
 
   const [aktifSekme, setAktifSekme] = useState<'zihni' | 'tevfik'>('zihni');
 
+  // STOK DÜZENLEME MODALI
   const [duzenleModalAcik, setDuzenleModalAcik] = useState(false);
   const [yeniStok, setYeniStok] = useState('');
+  
+  // GEÇMİŞ İŞLEM DÜZENLEME MODALI
+  const [hareketDuzenleModalAcik, setHareketDuzenleModalAcik] = useState(false);
+  const [seciliHareket, setSeciliHareket] = useState<any>(null);
+  const [editTarih, setEditTarih] = useState('');
+  const [editMiktar, setEditMiktar] = useState('');
+  const [editFiyat, setEditFiyat] = useState('');
+  const [editNot, setEditNot] = useState('');
+
   const [guncelleniyor, setGuncelleniyor] = useState(false);
 
   useEffect(() => {
@@ -52,12 +62,20 @@ export default function UrunDetayPage() {
           })
           .map(item => {
             const siparis = Array.isArray(item.orders) ? item.orders[0] : item.orders;
+            
+            // Gizli olarak kaydettiğimiz notu ayrıştırıyoruz
+            const hamAd = siparis?.customer_name || 'Bilinmeyen';
+            const parcalar = hamAd.split('|');
+            const firmaAdi = parcalar[0];
+            const notMetni = parcalar.length > 1 ? parcalar.slice(1).join('|') : null;
+
             return {
               itemId: item.id,
               orderId: siparis?.id,
               tarih: siparis?.created_at,
               tip: siparis?.type,
-              karsiTaraf: siparis?.customer_name || 'Bilinmeyen',
+              karsiTaraf: firmaAdi,
+              islemNotu: notMetni,
               miktar: item.quantity,
               fiyat: item.price
             };
@@ -87,6 +105,89 @@ export default function UrunDetayPage() {
       setUrun({ ...urun, stock_quantity: guncelStok });
       setDuzenleModalAcik(false);
       alert("Stok miktarı güncellendi!");
+    } catch (error: any) {
+      alert("Hata: " + error.message);
+    } finally {
+      setGuncelleniyor(false);
+    }
+  };
+
+  // İŞLEMİ DÜZENLEME EKRANINI AÇAN FONKSİYON
+  const hareketDuzenleBaslat = (h: any) => {
+    setSeciliHareket(h);
+    const dateStr = new Date(h.tarih).toISOString().split('T')[0];
+    setEditTarih(dateStr);
+    setEditMiktar(h.miktar.toString());
+    setEditFiyat(h.fiyat.toString());
+    setEditNot(h.islemNotu || '');
+    setHareketDuzenleModalAcik(true);
+  };
+
+  // İŞLEMİ DÜZENLE VE KAYDET (Tarih, Not, Miktar, Fiyat, Bakiye Güncellemesi Dahil)
+  const hareketGuncelleKaydet = async (e: any) => {
+    e.preventDefault();
+    setGuncelleniyor(true);
+
+    try {
+      const yeniMiktar = Number(editMiktar);
+      const yeniFiyat = Number(editFiyat);
+      const eskiMiktar = Number(seciliHareket.miktar);
+      const eskiFiyat = Number(seciliHareket.fiyat);
+      
+      const miktarFarki = yeniMiktar - eskiMiktar;
+      const tutarFarki = (yeniMiktar * yeniFiyat) - (eskiMiktar * eskiFiyat);
+
+      // 1. Order Item Güncellemesi (Fiyat ve Miktar)
+      await supabase
+        .from('order_items')
+        .update({ quantity: yeniMiktar, price: yeniFiyat })
+        .eq('id', seciliHareket.itemId);
+
+      // 2. Orders Güncellemesi (Tarih, Not ve Tutar)
+      const yeniFirmaAd = editNot.trim() !== '' 
+        ? `${seciliHareket.karsiTaraf}|${editNot.trim()}`
+        : seciliHareket.karsiTaraf;
+
+      const { data: currentOrder } = await supabase.from('orders').select('contact_id, total_amount, created_at').eq('id', seciliHareket.orderId).single();
+
+      if (currentOrder) {
+        let veritabaniTarihi = currentOrder.created_at;
+        const dateOnly = new Date(currentOrder.created_at).toISOString().split('T')[0];
+        
+        if (editTarih !== dateOnly) {
+          veritabaniTarihi = new Date(`${editTarih}T12:00:00`).toISOString();
+        }
+
+        const yeniSiparisToplami = Number(currentOrder.total_amount || 0) + tutarFarki;
+
+        await supabase
+          .from('orders')
+          .update({ 
+            created_at: veritabaniTarihi,
+            customer_name: yeniFirmaAd,
+            total_amount: yeniSiparisToplami
+          })
+          .eq('id', seciliHareket.orderId);
+
+        // 3. Firma Bakiyesini Güncelle
+        if (tutarFarki !== 0 && currentOrder.contact_id) {
+          const { data: contact } = await supabase.from('contacts').select('balance').eq('id', currentOrder.contact_id).single();
+          if (contact) {
+            // Alış işleminde tutar artarsa bizim borcumuz artar (yani bakiye eksiye gider)
+            const yeniBakiye = Number(contact.balance || 0) - tutarFarki;
+            await supabase.from('contacts').update({ balance: yeniBakiye }).eq('id', currentOrder.contact_id);
+          }
+        }
+      }
+
+      // 4. Ana Ürün Stok Güncellemesi
+      if (miktarFarki !== 0) {
+        const yeniStok = urun.stock_quantity + miktarFarki;
+        await supabase.from('products').update({ stock_quantity: yeniStok }).eq('id', urun.id);
+      }
+
+      setHareketDuzenleModalAcik(false);
+      veriGetir(); // Sayfadaki verileri yeniden yükle
     } catch (error: any) {
       alert("Hata: " + error.message);
     } finally {
@@ -255,13 +356,18 @@ export default function UrunDetayPage() {
               return (
                 <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group">
                   
-                  {/* Silme Butonu */}
-                  <button onClick={() => hareketSil(h.itemId, h.miktar)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors" title="Bu işlemi sil">
-                    <Trash2 size={18} />
-                  </button>
+                  {/* Düzenle ve Silme Butonları */}
+                  <div className="absolute top-4 right-4 flex gap-1.5">
+                    <button onClick={() => hareketDuzenleBaslat(h)} className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Bu işlemi düzenle">
+                      <Edit3 size={16} />
+                    </button>
+                    <button onClick={() => hareketSil(h.itemId, h.miktar)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Bu işlemi sil">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
 
-                  {/* Tedarikçi ve Tarih Bilgisi */}
-                  <div className="pr-10 mb-4">
+                  {/* Tedarikçi, Tarih ve Varsa Not Bilgisi */}
+                  <div className="pr-16 mb-4">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Tedarikçi / Alınan Yer</p>
                     <div className="flex items-center gap-2 mb-2.5">
                       <span className="text-sm font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 flex items-center gap-1.5">
@@ -272,6 +378,14 @@ export default function UrunDetayPage() {
                       <Calendar size={14} />
                       <span className="text-xs font-bold">{new Date(h.tarih).toLocaleDateString('tr-TR')}</span>
                     </div>
+                    
+                    {/* EKLENEN ŞIK NOT KUTUSU */}
+                    {h.islemNotu && (
+                      <div className="mt-3 bg-amber-50 border border-amber-100 p-2.5 rounded-xl flex items-start gap-2">
+                        <FileText size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                        <p className="text-[11px] font-bold text-amber-700 leading-snug">{h.islemNotu}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Fiyat ve Toplam Hesaplama Kartı */}
@@ -320,6 +434,50 @@ export default function UrunDetayPage() {
 
               <button type="submit" disabled={guncelleniyor} className="w-full mt-2 py-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg active:scale-95 transition-all">
                 <CheckCircle2 size={18} /> {guncelleniyor ? 'Kaydediliyor...' : 'Stoğu Güncelle'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* GEÇMİŞ İŞLEMİ DÜZENLEME MODALI */}
+      {hareketDuzenleModalAcik && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-black text-slate-900">İşlemi Düzenle</h3>
+              <button onClick={() => setHareketDuzenleModalAcik(false)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><X size={18} /></button>
+            </div>
+
+            <form onSubmit={hareketGuncelleKaydet} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">İşlem Tarihi</label>
+                <input required type="date" value={editTarih} onChange={(e) => setEditTarih(e.target.value)} 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 font-bold text-slate-800 outline-none focus:border-blue-500 text-sm" />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Miktar</label>
+                  <input required type="number" step="any" value={editMiktar} onChange={(e) => setEditMiktar(e.target.value)} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 font-bold text-slate-800 outline-none focus:border-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">B. Fiyat (₺)</label>
+                  <input required type="number" step="0.01" value={editFiyat} onChange={(e) => setEditFiyat(e.target.value)} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 font-bold text-slate-800 outline-none focus:border-blue-500 text-sm" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Ekstra Not / Açıklama</label>
+                <input type="text" value={editNot} onChange={(e) => setEditNot(e.target.value)} 
+                  placeholder="Opsiyonel..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 font-medium text-slate-800 outline-none focus:border-blue-500 text-sm" />
+              </div>
+
+              <button type="submit" disabled={guncelleniyor} className="w-full mt-4 py-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <CheckCircle2 size={18} /> {guncelleniyor ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
               </button>
             </form>
           </div>

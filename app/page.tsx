@@ -71,7 +71,7 @@ export default function HomePage() {
               onFocus={() => setAramaAcik(arama.length > 0)}
               onBlur={() => setTimeout(() => setAramaAcik(false), 250)}
               className="w-full bg-transparent py-5 pl-14 pr-5 text-slate-800 font-bold text-base outline-none placeholder:text-slate-400 placeholder:font-medium"
-              placeholder="Pencere ölçüsü, malzeme, müşteri..." 
+              placeholder="Pencere ölçüsü, malzeme, ARA..." 
             />
           </div>
 
@@ -142,7 +142,28 @@ export default function HomePage() {
         </section>
 
         {/* ==================================================== */}
-        {/* ALACAKLI DEFTERİ BUTONU */}
+        {/* YENİ MALZEME GİRİŞİ (Vurgulu) */}
+        {/* ==================================================== */}
+        <section>
+          <Link href="/alis-gir" className="bg-gradient-to-r from-orange-500 to-red-600 hover:opacity-95 text-white p-5 rounded-3xl flex items-center justify-between shadow-xl shadow-orange-500/20 transition-all active:scale-98 group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                <ArrowDownToLine size={28} />
+              </div>
+              <div>
+                <h3 className="font-black text-white text-lg tracking-tight">Yeni Malzeme Girişi</h3>
+                <p className="text-[11px] font-bold text-orange-100 mt-1 uppercase tracking-wider">Depoya Stok Ekle & Alış Yap</p>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white backdrop-blur-sm relative z-10">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+          </Link>
+        </section>
+
+        {/* ==================================================== */}
+        {/* ALACAKLI DEFTERİ */}
         {/* ==================================================== */}
         <section>
           <Link href="/alacaklar" className="bg-gradient-to-r from-emerald-600 to-teal-700 hover:opacity-95 text-white p-4.5 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-500/20 transition-all active:scale-98 group">
@@ -162,7 +183,7 @@ export default function HomePage() {
         </section>
 
         {/* ==================================================== */}
-        {/* ARDİYELER BUTONU */}
+        {/* ARDİYELER */}
         {/* ==================================================== */}
         <section>
           <Link href="/firmalar" className="bg-gradient-to-r from-indigo-600 to-violet-700 hover:opacity-95 text-white p-4.5 rounded-2xl flex items-center justify-between shadow-lg shadow-indigo-500/20 transition-all active:scale-98 group">
@@ -172,10 +193,30 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="font-black text-white text-base">ARDİYELER</h3>
-                <p className="text-xs font-medium text-indigo-100 mt-0.5">Malzeme aldığımız firmalar ve tedarikçiler</p>
+                <p className="text-xs font-medium text-indigo-100 mt-0.5">Malzeme aldığımız firmalar</p>
               </div>
             </div>
             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+          </Link>
+        </section>
+
+        {/* ==================================================== */}
+        {/* TEDARİKÇİLER */}
+        {/* ==================================================== */}
+        <section>
+          <Link href="/tedarikciler" className="bg-white hover:bg-slate-50 text-slate-800 p-4.5 rounded-2xl flex items-center justify-between border border-slate-200/80 shadow-sm transition-all active:scale-98 group">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors">
+                <Truck size={24} />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800 text-base">Tedarikçiler</h3>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Toptancılar ve diğer firmalar</p>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-600">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </div>
           </Link>
@@ -202,7 +243,7 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <Link href="/products" className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl flex flex-col justify-between transition-all shadow-lg shadow-blue-500/20 group active:scale-95">
+            <Link href="/urun-ekle" className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl flex flex-col justify-between transition-all shadow-lg shadow-blue-500/20 group active:scale-95">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform">
                 <PlusCircle size={20} />
               </div>
@@ -211,24 +252,6 @@ export default function HomePage() {
                 <p className="text-[11px] font-medium text-blue-100 mt-0.5">Yeni malzeme veya ölçü</p>
               </div>
             </Link>
-          </div>
-        </section>
-
-        {/* HIZLI İŞLEM KARTI */}
-        <section>
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-5 text-white shadow-xl shadow-slate-900/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-28 h-28 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1"></p>
-            <p className="text-lg font-black mb-4">Hızlı Satış & Alış</p>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/satis-yap" className="bg-blue-600 hover:bg-blue-500 text-white py-3 px-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-xs transition-all shadow-md shadow-blue-600/30 active:scale-95">
-                <ShoppingCart size={16} /> Malzeme Satışı
-              </Link>
-              <Link href="/alis-gir" className="bg-white/10 hover:bg-white/20 text-white py-3 px-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-xs transition-all backdrop-blur-md active:scale-95">
-                <ArrowDownToLine size={16} /> Malzeme Girişi
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -242,11 +265,14 @@ export default function HomePage() {
         <Link href="/products" className="flex flex-col items-center text-slate-400 hover:text-slate-700">
           <Package size={22} strokeWidth={2} />
         </Link>
-        <Link href="/satis-yap" className="flex flex-col items-center justify-center -mt-9 group">
+        
+        {/* SATIŞ YAP / HIZLI ÇIKIŞ BUTONU */}
+        <Link href="/satis-yap" className="flex flex-col items-center justify-center -mt-9 group" title="Hızlı Malzeme Satışı">
           <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/40 border-4 border-slate-100 group-active:scale-95 transition-transform">
             <PlusCircle size={28} />
           </div>
         </Link>
+
         <Link href="/alacaklar" className="flex flex-col items-center text-slate-400 hover:text-slate-700">
           <Wallet size={22} strokeWidth={2} />
         </Link>
